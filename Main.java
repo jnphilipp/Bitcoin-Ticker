@@ -23,12 +23,12 @@ public class Main {
 				Main http = new Main();
 				http.sendGet();
 			}
-		 
+		 String currency = "USD";
 			// HTTP GET request
 			private void sendGet() throws Exception {
 		 while(true){
 			 int timetosleep =600 ;//just the time to sleep that is later *10ed
-				String url = "https://api.bitcoinaverage.com/ticker/USD"; //sets the url
+				String url = "https://api.bitcoinaverage.com/ticker/"+currency; //sets the url
 		 
 				URL obj = new URL(url); // defines it as an url 
 				HttpURLConnection con = (HttpURLConnection) obj.openConnection();
