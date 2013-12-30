@@ -13,12 +13,6 @@ public class Main {
 	private final String USER_AGENT = "Mozilla/28.0"; // defined useragent
 	public static void main(String[] args) throws Exception {
 		// TODO Auto-generated method stub
-	
-		 
-		
-		 
-	
-		 
 		
 				Main http = new Main();
 				http.sendGet();
