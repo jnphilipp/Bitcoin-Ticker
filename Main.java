@@ -51,7 +51,8 @@ public class Main {
 				System.out.println(price);
 				String id = price.replace("\"last\":", "")+"$"; // manipulate the strings
 				Process p = Runtime.getRuntime().exec(new String[]{"/usr/bin/notify-send","-t","100","The Price Of Bitcoin Is...",id.replace(",","")});//makes the alert
-				
+				//.exec(new String[] { "/usr/bin/notify-send", "-i", "imagepath.png if you want the image",
+							//"The Price Of Bitcoin Is...", id.replace(",", "") });
 		 Thread.sleep(timetosleep*1000);//sleep
 				//print result
 				//System.out.println(response.toString());
