@@ -79,9 +79,7 @@ public class Main {
 			con.setRequestProperty("User-Agent", USER_AGENT);
 
 			int responseCode = con.getResponseCode();
-			// System.out.println("\nSending 'GET' request to URL : " + url);
-			// System.out.println("Response Code : " + responseCode);
-
+		
 			BufferedReader in = new BufferedReader(new InputStreamReader(
 					con.getInputStream()));
 			String inputLine;
@@ -139,14 +137,9 @@ public class Main {
 								"The Price Of Bitcoin Is at the daily average at ", id.replace(",", "") });
 			}
 			in.close();
-			//Grapher grapher = new Grapher();
-			//Grapher.main();
+		
 			Thread.sleep(timetosleep*60000);
-			//if(y<60000){System.out.println("Buy Request Sent");Process u = Runtime
-			//		.getRuntime()
-			//		.exec(new String[] { "python /home/notmot/Desktop/Buy.py" });}
-			// print result
-			// System.out.println(response.toString());
+		
 		}
 	}
 
