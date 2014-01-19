@@ -1,65 +1,157 @@
+import java.awt.Graphics;
+import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
-		import java.io.DataOutputStream;
-		import java.io.InputStreamReader;
-		import java.net.HttpURLConnection;
-		import java.net.URL;
-		 
+import java.io.DataOutputStream;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URI;
+import java.net.URL;
+import java.util.Date.*;
+
+import javax.imageio.ImageIO;
 import javax.net.ssl.HttpsURLConnection;
+import javax.swing.JFrame;
+import javax.swing.JMenu;
+import javax.swing.JMenuBar;
+import javax.swing.JPanel;
+
+
 public class Main {
 
 	/**
 	 * @param args
 	 */
-	private final String USER_AGENT = "Mozilla/28.0"; // defined useragent
+	private final String USER_AGENT = "Mozilla/6.0";
+	public int currentprice;
+
 	public static void main(String[] args) throws Exception {
 		// TODO Auto-generated method stub
+		Main http = new Main();
+		BufferedImage image =null;
+		File f = new File("/tmp/BitCoinIconForBitCoinTicker.png");
+		if(f.exists()) {System.out.println("User has logo file"); }else{
+        try{
+ System.out.println("Downloading File");
+            URL url =new URL("http://i.imgur.com/6bNY1sH.png");
+            // read the url
+           image = ImageIO.read(url);
+           ImageIO.write(image, "png",new File("/tmp/BitCoinIconForBitCoinTicker.png"));
+        }catch(IOException e){
+            e.printStackTrace();
+       System.out.println("Something went wrong, you likely the file is gone :(");
+        }
+		}
+		// // System.out.println("Testing 1 - Send Http GET request");
+		// http.sendGet();
 		
-				Main http = new Main();
-				http.sendGet();
-			}
-		 String currency = "USD";
-			// HTTP GET request
-			private void sendGet() throws Exception {
-		 while(true){
-			 int timetosleep =600 ;//just the time to sleep that is later *10ed
-				String url = "https://api.bitcoinaverage.com/ticker/"+currency; //sets the url
-		 
-				URL obj = new URL(url); // defines it as an url 
-				HttpURLConnection con = (HttpURLConnection) obj.openConnection();
-		 int i = 0;
-				// optional default is GET
-				con.setRequestMethod("GET"); // Get or Post
-		 
-				//add request header
-				con.setRequestProperty("User-Agent", USER_AGENT); // sets properties
-		 
-				int responseCode = con.getResponseCode(); // get the responce code as an int
-		 
-				BufferedReader in = new BufferedReader(
-				        new InputStreamReader(con.getInputStream()));
-				        //for readline
-				String inputLine;// defines the string we later use for the each line
-				StringBuffer response = new StringBuffer();
-		 String price = "";
-				while ((inputLine = in.readLine()) != null) { // while there is stuff to grab
-					//response.append(inputLine);
-					i++;//add to I 
-					if(i==5){price = inputLine;} //when on the 5th line set price to that lnce
-					
+		// System.out.println("\nTesting 2 - Send Http POST request");
+		http.sendGet();
+	//	File f = new File("/home/Home/Downloads/6bN1sH.png");
+		//if(f.exists()) {System.out.println("User has logo file"); }else{
+			//System.out.println("Not found");
+			//Process p = Runtime
+			//		.getRuntime()
+				//	.exec(new String[] {"sudo wget http://i.imgur.com/6bNY1sH.png -P /home/Home/Downloads/"});
+		//	System.out.println("Download compleat");
+		//}
+
+	}
+
+	// HTTP GET request
+	private void sendGet() throws Exception {
+		
+		
+		while (true) {
+			int timetosleep = 20;
+			String currency = "USD";
+			String url = "https://api.bitcoinaverage.com/ticker/"+currency;
+
+			URL obj = new URL(url);
+			HttpURLConnection con = (HttpURLConnection) obj.openConnection();
+			int i = 0;
+			// optional default is GET
+			con.setRequestMethod("GET");
+
+			// add request header
+			con.setRequestProperty("User-Agent", USER_AGENT);
+
+			int responseCode = con.getResponseCode();
+			// System.out.println("\nSending 'GET' request to URL : " + url);
+			// System.out.println("Response Code : " + responseCode);
+
+			BufferedReader in = new BufferedReader(new InputStreamReader(
+					con.getInputStream()));
+			String inputLine;
+			int realaverage = 0;
+			StringBuffer response = new StringBuffer();
+			String price = "";
+			while ((inputLine = in.readLine()) != null) {
+				// response.append(inputLine);
+				i++;
+				if (i == 5) {
+					price = inputLine;
 				}
 				
-				System.out.println(price);
-				String id = price.replace("\"last\":", "")+"$"; // manipulate the strings
-				Process p = Runtime.getRuntime().exec(new String[]{"/usr/bin/notify-send","-t","100","The Price Of Bitcoin Is...",id.replace(",","")});//makes the alert
-				//.exec(new String[] { "/usr/bin/notify-send", "-i", "imagepath.png if you want the image",
-							//"The Price Of Bitcoin Is...", id.replace(",", "") });
-		 Thread.sleep(timetosleep*1000);//sleep
-				//print result
-				//System.out.println(response.toString());
-		 }
-			}
-		 
+				if (i == 2) {
+					String avg = inputLine;
+					System.out.println(avg.replace("\"24h_avg\":", ""));
+					String avgfixed = avg.replace("\"24h_avg\":", "");
+					String avgfixed2 = avgfixed.replace(",", "");
+					String avgfixed3 = avgfixed2.replace(" ", "");
+					int ave = Integer.parseInt(avgfixed3.replace(".",""));
+				    realaverage = ave / 100;
+				}
+				
 
-	{}
+			}
+
+			
+
+	System.out.println(realaverage);
+			System.out.println(price);
+			String id = price.replace("\"last\":", "") + "$";
+			
+			String q = id.replace(",$", "");
+			String e = q.replace("   ","");
+			String ui = e.replace(".", "");
+			int y = Integer.parseInt(ui);
+			if(y-realaverage > 0){
+			
+			Process p = Runtime
+					.getRuntime()
+					.exec(new String[] { "/usr/bin/notify-send", "-i", "/tmp/BitCoinIconForBitCoinTicker.png",
+							"The Price Of Bitcoin Is Up from the daily average  at ", id.replace(",", "") });
+			int currentprice = y;
+			}
+			if(y-realaverage < 0){
+				Process p = Runtime
+						.getRuntime()
+						.exec(new String[] { "/usr/bin/notify-send", "-i", "/tmp/BitCoinIconForBitCoinTicker.png",
+								"The Price Of Bitcoin Is Down from the daily average at ", id.replace(",", "") });
+			}
+			if(y-realaverage == 0){
+				Process p = Runtime
+						.getRuntime()
+						.exec(new String[] { "/usr/bin/notify-send", "-i", "/tmp/BitCoinIconForBitCoinTicker.png",
+								"The Price Of Bitcoin Is at the daily average at ", id.replace(",", "") });
+			}
+			in.close();
+			//Grapher grapher = new Grapher();
+			//Grapher.main();
+			Thread.sleep(timetosleep*60000);
+			//if(y<60000){System.out.println("Buy Request Sent");Process u = Runtime
+			//		.getRuntime()
+			//		.exec(new String[] { "python /home/notmot/Desktop/Buy.py" });}
+			// print result
+			// System.out.println(response.toString());
+		}
+	}
+
+
+	{
+	}
 
 }
