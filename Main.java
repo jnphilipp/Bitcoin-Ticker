@@ -5,7 +5,9 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -15,7 +17,9 @@ import javax.imageio.ImageIO;
 
 public class Main {
 	public static final String ICON_PATH = "/tmp/BitCoinIconForBitCoinTicker.png";
+	public static final String ICON_SOURCE = "http://i.imgur.com/6bNY1sH.png";
 	public static final Map<String, String> CURRENCIES;
+	private static final String USER_AGENT = "Mozilla/6.0";
 
 	static {
 		Map<String, String> map = new LinkedHashMap<>();
@@ -40,109 +44,125 @@ public class Main {
 		CURRENCIES = Collections.unmodifiableMap(map);
 	}
 
-	private final String USER_AGENT = "Mozilla/6.0";
-	public int currentprice;
+	private String currency;
+	private int timeToSleep = 1800;
+
+	public Main(String currency, int timeToSleep) {
+		this.currency = currency;
+		this.timeToSleep = timeToSleep;
+	}
 
 	/**
 	 * @param args
 	 */
 	public static void main(String[] args) throws Exception {
 		String currency = "USD";
+		int timeToSleep = 1800;
 		if ( args.length == 1 )
 			if ( Main.CURRENCIES.containsKey(args[0].toUpperCase()) )
 				currency = args[0].toUpperCase();
 
+		Iterator<String> it = Arrays.asList(args).iterator();
+		while ( it.hasNext() ) {
+			String arg = it.next();
+			if ( Main.CURRENCIES.containsKey(arg.toUpperCase()) )
+				currency = arg.toUpperCase();
+			else if ( arg.equals("-time-to-sleep") )
+				timeToSleep = Integer.parseInt(it.next());
+		}
+
 		System.out.println("currency: " + currency);
+		System.out.println("time to sleep: " + timeToSleep);
+		if ( new File(Main.ICON_PATH).exists())
+			System.out.println("icon exists");
+		else
+			Main.downloadIcon();
 
-		Main http = new Main();
-		BufferedImage image =null;
-		File f = new File("/tmp/BitCoinIconForBitCoinTicker.png");
-		if(f.exists()) {System.out.println("User has logo file"); }else{
-        try{
- System.out.println("Downloading File");
-            URL url =new URL("http://i.imgur.com/6bNY1sH.png");
-            // read the url
-           image = ImageIO.read(url);
-           ImageIO.write(image, "png",new File(Main.ICON_PATH));
-        }catch(IOException e){
-            e.printStackTrace();
-       System.out.println("Something went wrong, you likely the file is gone :(");
-        }
-		}
-		// // System.out.println("Testing 1 - Send Http GET request");
-		// http.sendGet();
-		
-		// System.out.println("\nTesting 2 - Send Http POST request");
-		http.sendGet(currency);
-	//	File f = new File("/home/Home/Downloads/6bN1sH.png");
-		//if(f.exists()) {System.out.println("User has logo file"); }else{
-			//System.out.println("Not found");
-			//Process p = Runtime
-			//		.getRuntime()
-				//	.exec(new String[] {"sudo wget http://i.imgur.com/6bNY1sH.png -P /home/Home/Downloads/"});
-		//	System.out.println("Download compleat");
-		//}
-
+		Main main = new Main(currency, timeToSleep);
+		main.mainLoop();
 	}
 
-	// HTTP GET request
-	private void sendGet(String currency) throws Exception {
-		
-		
+	/**
+	 * Downloads the Bitcoin icon for notification bubble.
+	 */
+	private static void downloadIcon() {
+		System.out.println("downloading icon");
+		BufferedImage image = null;
+
+		try {
+			URL url = new URL(Main.ICON_SOURCE);
+			image = ImageIO.read(url);
+			ImageIO.write(image, "png", new File(Main.ICON_PATH));
+		}
+		catch ( IOException e ) {
+			System.err.println("Something went wrong while downloading the icon :(");
+			e.printStackTrace();
+		}
+	}
+
+	/**
+	 * Main loop.
+	 */
+	private void mainLoop() {
+		float[] price = new float[2];
+
 		while (true) {
-			int timetosleep = 20;
-			String url = "https://api.bitcoinaverage.com/ticker/"+currency;
+			try {
+				price = this.getNewPrice();
+				System.out.println("price: " + price[0]);
+				System.out.println("avg: " + price[1]);
 
-			URL obj = new URL(url);
-			HttpURLConnection con = (HttpURLConnection) obj.openConnection();
-			int i = 0;
-			// optional default is GET
-			con.setRequestMethod("GET");
+				if ( price[0] - price[1] > 0 )
+					this.sendNotify("The Bitcoin price is up from the daily average  at %.2f %s.", price[0]);
+				else if ( price[0] - price[1] < 0 )
+					this.sendNotify("The Bitcoin price is down from the daily average at %.2f %s.", price[0]);
+				else
+					this.sendNotify("The Bitcoin price is at the daily average at %.2f %s.", price[0]);
 
-			// add request header
-			con.setRequestProperty("User-Agent", USER_AGENT);
-
-			int responseCode = con.getResponseCode();
-		
-			BufferedReader in = new BufferedReader(new InputStreamReader(
-					con.getInputStream()));
-			String inputLine;
-			float realaverage = 0;
-			StringBuffer response = new StringBuffer();
-			String price = "";
-			while ((inputLine = in.readLine()) != null) {
-				// response.append(inputLine);
-				i++;
-				Pattern p = Pattern.compile("last\\\":\\s(.+),$");
-				Matcher m = p.matcher(inputLine);
-				if ( m.find() )
-					price = m.group(1);
-
-				p = Pattern.compile("24h_avg\\\":\\s(.+),$");
-				m = p.matcher(inputLine);
-				if ( m.find() ) {
-					realaverage = Float.parseFloat(m.group(1));
-				}
+				Thread.sleep(this.timeToSleep * 1000);
 			}
-			in.close();
-
-			System.out.println("price: " + price);
-			System.out.println("avg: " + realaverage);
-
-			float y = Float.parseFloat(price);
-			if(y-realaverage > 0)
-				this.sendNotify("The Bitcoin price is up from the daily average  at " + price + " " + Main.CURRENCIES.get(currency) + ".");
-			if(y-realaverage < 0)
-				this.sendNotify("The Bitcoin price is down from the daily average at " + price + " " + Main.CURRENCIES.get(currency) + ".");
-			if(y-realaverage == 0)
-				this.sendNotify("The Bitcoin price is at the daily average at " + price + " " + Main.CURRENCIES.get(currency) + ".");
-
-			Thread.sleep(timetosleep*60000);
+			catch ( Exception e ) {
+				e.printStackTrace();
+			}
 		}
 	}
 
-	private void sendNotify(String text) throws IOException {
-		Runtime.getRuntime().exec(new String[] {"/usr/bin/notify-send", "-i", Main.ICON_PATH, text});
+	/**
+	 * Gets the new price and average.
+	 * @return two dimensional array, first field price, second field average
+	 * @throws Exception
+	 */
+	private float[] getNewPrice() throws Exception {
+		URL url = new URL("https://api.bitcoinaverage.com/ticker/" + this.currency);
+		HttpURLConnection con = (HttpURLConnection) url.openConnection();
+		con.setRequestMethod("GET");
+		con.setRequestProperty("User-Agent", USER_AGENT);
+
+		BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()));
+		String inputLine, price = "", avg = "";
+		while ( (inputLine = in.readLine()) != null ) {
+			Pattern p = Pattern.compile("last\\\":\\s(.+),$");
+			Matcher m = p.matcher(inputLine);
+			if ( m.find() )
+				price = m.group(1);
+
+			p = Pattern.compile("24h_avg\\\":\\s(.+),$");
+			m = p.matcher(inputLine);
+			if ( m.find() )
+				avg = m.group(1);
+		}
+		in.close();
+
+		return new float[] {Float.parseFloat(price), Float.parseFloat(avg)};
 	}
 
+	/**
+	 * Sends a notification bubble.
+	 * @param text text
+	 * @param price price
+	 * @throws IOException
+	 */
+	private void sendNotify(String text, float price) throws IOException {
+		Runtime.getRuntime().exec(new String[] {"/usr/bin/notify-send", "-i", Main.ICON_PATH, String.format(text, price, Main.CURRENCIES.get(this.currency))});
+	}
 }
